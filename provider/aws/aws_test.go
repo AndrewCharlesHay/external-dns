@@ -17,6 +17,7 @@ limitations under the License.
 package aws
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math"
@@ -29,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -81,6 +83,10 @@ func NewRoute53APIStub(t *testing.T) *Route53APIStub {
 }
 
 func (r *Route53APIStub) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+	if r.m.isMocked("ListResourceRecordSets", input) {
+		return r.m.ListResourceRecordSets(ctx, input, optFns...)
+	}
+
 	output := &route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
 	require.NotNil(r.t, input.MaxItems)
 	assert.EqualValues(r.t, route53PageSize, *input.MaxItems)
@@ -141,9 +147,27 @@ func wildcardEscape(s string) string {
 	return s
 }
 
+// Route53 octal escapes https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
+func specialCharactersEscape(s string) string {
+	var result strings.Builder
+	for _, char := range s {
+		if (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9') || char == '-' || char == '.' {
+			result.WriteRune(char)
+		} else {
+			octalCode := fmt.Sprintf("\\%03o", char)
+			result.WriteString(octalCode)
+		}
+	}
+	return result.String()
+}
+
 func (r *Route53APIStub) ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
-		tags := r.zoneTags[*input.ResourceId]
+		zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, *input.ResourceId)
+		if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
+			return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
+		}
+		tags := r.zoneTags[zoneId]
 		return &route53.ListTagsForResourceOutput{
 			ResourceTagSet: &route53types.ResourceTagSet{
 				ResourceId:   input.ResourceId,
@@ -162,7 +186,7 @@ func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *ro
 
 	_, ok := r.zones[*input.HostedZoneId]
 	if !ok {
-		return nil, fmt.Errorf("Hosted zone doesn't exist: %s", *input.HostedZoneId)
+		return nil, fmt.Errorf("hosted zone doesn't exist: %s", *input.HostedZoneId)
 	}
 
 	if len(input.ChangeBatch.Changes) == 0 {
@@ -198,12 +222,12 @@ func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *ro
 		switch change.Action {
 		case route53types.ChangeActionCreate:
 			if _, found := recordSets[key]; found {
-				return nil, fmt.Errorf("Attempt to create duplicate rrset %s", key) // TODO: Return AWS errors with codes etc
+				return nil, fmt.Errorf("attempt to create duplicate rrset %s", key) // TODO: Return AWS errors with codes etc
 			}
 			recordSets[key] = append(recordSets[key], *change.ResourceRecordSet)
 		case route53types.ChangeActionDelete:
 			if _, found := recordSets[key]; !found {
-				return nil, fmt.Errorf("Attempt to delete non-existent rrset %s", key) // TODO: Check other fields too
+				return nil, fmt.Errorf("attempt to delete non-existent rrset %s", key) // TODO: Check other fields too
 			}
 			delete(recordSets, key)
 		case route53types.ChangeActionUpsert:
@@ -238,6 +262,14 @@ func (r *Route53APIStub) CreateHostedZone(ctx context.Context, input *route53.Cr
 
 type dynamicMock struct {
 	mock.Mock
+}
+
+func (m *dynamicMock) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+	args := m.Called(input)
+	if args.Get(0) != nil {
+		return args.Get(0).(*route53.ListResourceRecordSetsOutput), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func (m *dynamicMock) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
@@ -305,13 +337,34 @@ func TestAWSZones(t *testing.T) {
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
 			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
-
 			zones, err := provider.Zones(context.Background())
 			require.NoError(t, err)
-
 			validateAWSZones(t, zones, ti.expectedZones)
 		})
 	}
+}
+
+func TestAWSZonesWithTagFilterError(t *testing.T) {
+	client := NewRoute53APIStub(t)
+	provider := &AWSProvider{
+		clients:       map[string]Route53API{defaultAWSProfile: client},
+		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
+		dryRun:        false,
+		zonesCache:    &zonesListCache{duration: 1 * time.Minute},
+	}
+	createAWSZone(t, provider, &route53types.HostedZone{
+		Id:     aws.String("/hostedzone/zone-1.ext-dns-test-ok.example.com."),
+		Name:   aws.String("zone-1.ext-dns-test-ok.example.com."),
+		Config: &route53types.HostedZoneConfig{PrivateZone: false},
+	})
+	createAWSZone(t, provider, &route53types.HostedZone{
+		Id:     aws.String("/hostedzone/zone-2.ext-dns-test-error-on-list-tags.example.com."),
+		Name:   aws.String("zone-2.ext-dns-test-error-on-list-tags.example.com."),
+		Config: &route53types.HostedZoneConfig{PrivateZone: false},
+	})
+	_, err := provider.Zones(context.Background())
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to list tags for zone /hostedzone/zone-2.ext-dns-test-error-on-list-tags")
 }
 
 func TestAWSRecordsFilter(t *testing.T) {
@@ -352,10 +405,32 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("8.8.8.8")}},
 		},
 		{
-			Name:            aws.String("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
+			Name:            aws.String(wildcardEscape("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do.")),
 			Type:            route53types.RRTypeA,
 			TTL:             aws.Int64(recordTTL),
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+		},
+		{
+			Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type:            route53types.RRTypeCname,
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("example")}},
+		},
+		{
+			Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes-a.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+		},
+		{
+			Name: aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes-alias.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type: route53types.RRTypeA,
+			TTL:  aws.Int64(recordTTL),
+			AliasTarget: &route53types.AliasTarget{
+				DNSName:              aws.String("escape-codes.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: false,
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
 		},
 		{
 			Name: aws.String("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
@@ -499,6 +574,9 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 		endpoint.NewEndpointWithTTL("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
 		endpoint.NewEndpointWithTTL("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("escape-%!s(<nil>)-codes.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "example").WithProviderSpecific(providerSpecificAlias, "false"),
+		endpoint.NewEndpointWithTTL("escape-%!s(<nil>)-codes-a.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("escape-%!s(<nil>)-codes-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "escape-codes.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
 		endpoint.NewEndpointWithTTL("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
 		endpoint.NewEndpointWithTTL("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
 		endpoint.NewEndpointWithTTL("list-test-alias-evaluate.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true").WithProviderSpecific(providerSpecificAlias, "true"),
@@ -516,6 +594,22 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
 	})
+}
+
+func TestAWSRecordsSoftError(t *testing.T) {
+	pvd, subClient := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []route53types.ResourceRecordSet{
+		{
+			Name:            aws.String("list-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+		},
+	})
+
+	subClient.MockMethod("ListResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
+	_, err := pvd.Records(context.Background())
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
 }
 
 func TestAWSAdjustEndpoints(t *testing.T) {
@@ -687,6 +781,14 @@ func TestAWSApplyChanges(t *testing.T) {
 				TTL:             aws.Int64(recordTTL),
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("30 mailhost1.foo.elb.amazonaws.com")}},
 			},
+			{
+				Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("no-change"),
+				Weight:          aws.Int64(10),
+			},
 		})
 
 		createRecords := []*endpoint.Endpoint{
@@ -712,6 +814,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("before").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost2.bar.elb.amazonaws.com"),
+			endpoint.NewEndpoint("escape-%!s(<nil>)-codes.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 		}
 		updatedRecords := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
@@ -853,6 +956,14 @@ func TestAWSApplyChanges(t *testing.T) {
 			},
 		})
 		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
+			{
+				Name:            aws.String("escape-\\045\\041s\\050\\074nil\\076\\051-codes.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("no-change"),
+				Weight:          aws.Int64(10),
+			},
 			{
 				Name:            aws.String("create-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
@@ -1791,11 +1902,35 @@ func TestAWSisAWSAlias(t *testing.T) {
 func TestAWSCanonicalHostedZone(t *testing.T) {
 	for suffix, id := range canonicalHostedZones {
 		zone := canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
-		assert.Equal(t, id, zone)
+		assert.Equal(t, id, zone, "zone suffix: %s", suffix)
 	}
 
 	zone := canonicalHostedZone("foo.example.org")
 	assert.Equal(t, "", zone, "no canonical zone should be returned for a non-aws hostname")
+}
+
+func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	host := "foo.elb.eastwest-1.amazonaws.com"
+	_ = canonicalHostedZone(host)
+	assert.Containsf(t, buf.String(), "Could not find canonical hosted zone for domain", host)
+}
+
+func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for suffix, _ := range canonicalHostedZones {
+			_ = canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
+		}
+	}
+}
+
+func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, _ = range canonicalHostedZones {
+			_ = canonicalHostedZone("extremely.long.zone-2.ext.dns.test.zone.non.canonical.example.com")
+		}
+	}
 }
 
 func TestAWSSuitableZones(t *testing.T) {
@@ -2023,4 +2158,35 @@ func TestRequiresDeleteCreate(t *testing.T) {
 
 	assert.False(t, provider.requiresDeleteCreate(oldSetIdentifier, oldSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, oldSetIdentifier)
 	assert.True(t, provider.requiresDeleteCreate(oldSetIdentifier, newSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, newSetIdentifier)
+}
+
+func TestConvertOctalToAscii(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Characters escaped !\"#$%&'()*+,-/:;",
+			input:    "txt-\\041\\042\\043\\044\\045\\046\\047\\050\\051\\052\\053\\054-\\057\\072\\073-test.example.com",
+			expected: "txt-!\"#$%&'()*+,-/:;-test.example.com",
+		},
+		{
+			name:     "Characters escaped <=>?@[\\]^_`{|}~",
+			input:    "txt-\\074\\075\\076\\077\\100\\133\\134\\135\\136_\\140\\173\\174\\175\\176-test2.example.com",
+			expected: "txt-<=>?@[\\]^_`{|}~-test2.example.com",
+		},
+		{
+			name:     "No escaped characters in domain",
+			input:    "txt-awesome-test3.example.com",
+			expected: "txt-awesome-test3.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := convertOctalToAscii(tt.input)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
 }
