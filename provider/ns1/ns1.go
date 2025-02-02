@@ -129,7 +129,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 			IdleConnTimeout:       defaultTransport.IdleConnTimeout,
 			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
 			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig:       &tls.Config{},
 		}
 		client.Transport = tr
 	}
