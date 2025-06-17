@@ -52,7 +52,7 @@ const (
 
 	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
 	freeZoneMaxCommentLength = 100
-	paidZoneMaxCommentLength = 500
+	paidZoneMaxCommentLength  = 500
 )
 
 var changeActionNames = map[changeAction]string{
@@ -233,6 +233,7 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig CustomHostnamesConfig
 	DNSRecordsConfig      DNSRecordsConfig
 	RegionKey             string
+	RulesetConfig         *cloudflare.Ruleset // Optional: user-supplied ruleset definition
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -273,13 +274,12 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
 func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, regionKey string, customHostnamesConfig CustomHostnamesConfig, dnsRecordsConfig DNSRecordsConfig) (*CloudFlareProvider, error) {
-	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
 		err    error
 	)
-	if os.Getenv("CF_API_TOKEN") != "" {
-		token := os.Getenv("CF_API_TOKEN")
+	token := os.Getenv("CF_API_TOKEN")
+	if token != "" {
 		if strings.HasPrefix(token, "file:") {
 			tokenBytes, err := os.ReadFile(strings.TrimPrefix(token, "file:"))
 			if err != nil {
@@ -295,7 +295,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
 
-	return &CloudFlareProvider{
+	provider := &CloudFlareProvider{
 		Client:                zoneService{config},
 		domainFilter:          domainFilter,
 		zoneIDFilter:          zoneIDFilter,
@@ -304,7 +304,14 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		DryRun:                dryRun,
 		RegionKey:             regionKey,
 		DNSRecordsConfig:      dnsRecordsConfig,
-	}, nil
+		RulesetConfig:         nil,
+	}
+	rulesetConfig, err := parseRulesetFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	provider.RulesetConfig = rulesetConfig
+	return provider, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -557,10 +564,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					failedChange = true
 				}
 				recordID := p.getRecordID(records, change.ResourceRecord)
-				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
-				}
 				recordParam := updateDNSRecordParam(*change)
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
@@ -570,10 +573,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
-				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
-				}
 				err := p.Client.DeleteDNSRecord(ctx, resourceContainer, recordID)
 				if err != nil {
 					failedChange = true
@@ -605,6 +604,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			}
 			log.WithFields(logFields).Errorf("failed to build data localization regional hostname changes: %v", err)
 			failedChange = true
+		}
+
+		// Call ruleset helper after DNS changes
+		if err := p.ApplyRulesetIfConfigured(ctx, zones); err != nil {
+			return err
 		}
 
 		if failedChange {

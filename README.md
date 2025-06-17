@@ -291,6 +291,18 @@ If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be
 If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
 It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
 
+## Cloudflare Ruleset Support
+
+You can configure ExternalDNS to manage Cloudflare Rulesets by setting the `CF_RULESET_JSON` environment variable with a valid Cloudflare Ruleset JSON definition. This ruleset will be created or updated for each managed zone.
+
+Example usage:
+
+```sh
+export CF_RULESET_JSON='{"name":"my-ruleset","description":"Example ruleset","kind":"zone","phase":"http_request_firewall_custom","rules":[{"action":"block","expression":"http.request.uri.path contains \"/blocked\""}]}'
+```
+
+See [Cloudflare Ruleset Engine documentation](https://developers.cloudflare.com/ruleset-engine/about/rulesets/) for more details on ruleset structure.
+
 ## Contributing
 
 Are you interested in contributing to external-dns? We, the maintainers and community, would love your

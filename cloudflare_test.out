@@ -1,0 +1,308 @@
+=== RUN   Test_regionalHostname
+=== RUN   Test_regionalHostname/no_region_key
+=== RUN   Test_regionalHostname/default_region_key
+=== RUN   Test_regionalHostname/endpoint_with_region_key
+=== RUN   Test_regionalHostname/endpoint_with_empty_region_key
+=== RUN   Test_regionalHostname/unsupported_record_type
+--- PASS: Test_regionalHostname (0.00s)
+    --- PASS: Test_regionalHostname/no_region_key (0.00s)
+    --- PASS: Test_regionalHostname/default_region_key (0.00s)
+    --- PASS: Test_regionalHostname/endpoint_with_region_key (0.00s)
+    --- PASS: Test_regionalHostname/endpoint_with_empty_region_key (0.00s)
+    --- PASS: Test_regionalHostname/unsupported_record_type (0.00s)
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/empty_input
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/changes_without_RegionalHostname
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/change_with_empty_RegionKey
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/conflicting_region_keys
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/update_takes_precedence_over_create_&_delete
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/create_after_delete_becomes_update
+=== RUN   Test_dataLocalizationRegionalHostnamesChanges/consolidate_mixed_actions_for_different_hostnames
+--- PASS: Test_dataLocalizationRegionalHostnamesChanges (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/empty_input (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/changes_without_RegionalHostname (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/change_with_empty_RegionKey (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/conflicting_region_keys (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/update_takes_precedence_over_create_&_delete (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/create_after_delete_becomes_update (0.00s)
+    --- PASS: Test_dataLocalizationRegionalHostnamesChanges/consolidate_mixed_actions_for_different_hostnames (0.00s)
+=== RUN   TestNewCloudFlareProvider_WithRulesetEnv
+--- PASS: TestNewCloudFlareProvider_WithRulesetEnv (0.00s)
+=== RUN   TestNewCloudFlareProvider_InvalidRulesetEnv
+--- PASS: TestNewCloudFlareProvider_InvalidRulesetEnv (0.00s)
+=== RUN   TestApplyChanges_CallsRulesetAPI
+--- PASS: TestApplyChanges_CallsRulesetAPI (0.00s)
+=== RUN   TestCloudflareA
+--- PASS: TestCloudflareA (0.00s)
+=== RUN   TestCloudflareCname
+--- PASS: TestCloudflareCname (0.00s)
+=== RUN   TestCloudflareCustomTTL
+--- PASS: TestCloudflareCustomTTL (0.00s)
+=== RUN   TestCloudflareProxiedDefault
+--- PASS: TestCloudflareProxiedDefault (0.00s)
+=== RUN   TestCloudflareProxiedOverrideTrue
+--- PASS: TestCloudflareProxiedOverrideTrue (0.00s)
+=== RUN   TestCloudflareProxiedOverrideFalse
+--- PASS: TestCloudflareProxiedOverrideFalse (0.00s)
+=== RUN   TestCloudflareProxiedOverrideIllegal
+--- PASS: TestCloudflareProxiedOverrideIllegal (0.00s)
+=== RUN   TestCloudflareSetProxied
+--- PASS: TestCloudflareSetProxied (0.00s)
+=== RUN   TestCloudflareRegionalHostname
+--- PASS: TestCloudflareRegionalHostname (0.00s)
+=== RUN   TestCloudflareRegionalHostnameDefaults
+--- PASS: TestCloudflareRegionalHostnameDefaults (0.00s)
+=== RUN   TestCloudflareZones
+--- PASS: TestCloudflareZones (0.00s)
+=== RUN   TestCloudflareZonesFailed
+--- PASS: TestCloudflareZonesFailed (0.00s)
+=== RUN   TestCloudFlareZonesWithIDFilter
+--- PASS: TestCloudFlareZonesWithIDFilter (0.00s)
+=== RUN   TestCloudflareListZonesRateLimited
+--- PASS: TestCloudflareListZonesRateLimited (0.00s)
+=== RUN   TestCloudflareListZoneInternalErrors
+    cloudflare_test.go:972: soft error
+        
+--- PASS: TestCloudflareListZoneInternalErrors (0.00s)
+=== RUN   TestCloudflareRecords
+--- PASS: TestCloudflareRecords (0.00s)
+=== RUN   TestCloudflareProvider
+=== RUN   TestCloudflareProvider/use_api_token
+=== RUN   TestCloudflareProvider/use_api_token_file_contents
+=== RUN   TestCloudflareProvider/use_email_and_key
+=== RUN   TestCloudflareProvider/no_use_email_and_key
+=== RUN   TestCloudflareProvider/use_credentials_in_missing_file
+=== RUN   TestCloudflareProvider/use_credentials_in_missing_file#01
+--- PASS: TestCloudflareProvider (0.00s)
+    --- PASS: TestCloudflareProvider/use_api_token (0.00s)
+    --- PASS: TestCloudflareProvider/use_api_token_file_contents (0.00s)
+    --- PASS: TestCloudflareProvider/use_email_and_key (0.00s)
+    --- PASS: TestCloudflareProvider/no_use_email_and_key (0.00s)
+    --- PASS: TestCloudflareProvider/use_credentials_in_missing_file (0.00s)
+    --- PASS: TestCloudflareProvider/use_credentials_in_missing_file#01 (0.00s)
+=== RUN   TestCloudflareApplyChanges
+    cloudflare_test.go:1158: [1;33mFailed test[0m
+        [1;36mDATA[1].RecordId: values differ[0m
+        [1;31m	     got: [0;31m""[0m
+        [1;32m	expected: [0;32m"foobar.bar.com--target"[0m
+        [1;36mDATA[1].RecordData.Name: values differ[0m
+        [1;31m	     got: [0;31m""[0m
+        [1;32m	expected: [0;32m"foobar.bar.com"[0m
+        [1;36mDATA[1].RecordData.Content: values differ[0m
+        [1;31m	     got: [0;31m""[0m
+        [1;32m	expected: [0;32m"target"[0m
+        [1;36mDATA[1].RecordData.ID: values differ[0m
+        [1;31m	     got: [0;31m""[0m
+        [1;32m	expected: [0;32m"foobar.bar.com--target"[0m
+        [1;36mDATA[1].RecordData.TTL: values differ[0m
+        [1;31m	     got: [0;31m0[0m
+        [1;32m	expected: [0;32m1[0m
+        [1;36m*DATA[1].RecordData.Proxied: values differ[0m
+        [1;31m	     got: [0;31mnil[0m
+        [1;32m	expected: [0;32mfalse[0m
+        [1;36mDATA: comparing slices, from index #3[0m
+        	[1;31mExtra item: [0;31m((cloudflare.MockAction) {[0m
+        	            [0;31m  Name: (string) (len=6) "Delete",[0m
+        	            [0;31m  ZoneId: (string) (len=3) "001",[0m
+        	            [0;31m  RecordId: (string) (len=22) "foobar.bar.com--target",[0m
+        	            [0;31m  RecordData: (cloudflare.DNSRecord) {[0m
+        	            [0;31m   CreatedOn: (time.Time) 0001-01-01 00:00:00 +0000 UTC,[0m
+        	            [0;31m   ModifiedOn: (time.Time) 0001-01-01 00:00:00 +0000 UTC,[0m
+        	            [0;31m   Type: (string) "",[0m
+        	            [0;31m   Name: (string) "",[0m
+        	            [0;31m   Content: (string) "",[0m
+        	            [0;31m   Meta: (interface {}) <nil>,[0m
+        	            [0;31m   Data: (interface {}) <nil>,[0m
+        	            [0;31m   ID: (string) "",[0m
+        	            [0;31m   Priority: (*uint16)(<nil>),[0m
+        	            [0;31m   TTL: (int) 0,[0m
+        	            [0;31m   Proxied: (*bool)(<nil>),[0m
+        	            [0;31m   Proxiable: (bool) false,[0m
+        	            [0;31m   Comment: (string) "",[0m
+        	            [0;31m   Tags: ([]string) <nil>,[0m
+        	            [0;31m   Settings: (cloudflare.DNSRecordSettings) {[0m
+        	            [0;31m    FlattenCNAME: (*bool)(<nil>)[0m
+        	            [0;31m   }[0m
+        	            [0;31m  },[0m
+        	            [0;31m  RegionalHostname: (cloudflare.RegionalHostname) {[0m
+        	            [0;31m   Hostname: (string) "",[0m
+        	            [0;31m   RegionKey: (string) "",[0m
+        	            [0;31m   Routing: (string) "",[0m
+        	            [0;31m   CreatedOn: (*time.Time)(<nil>)[0m
+        	            [0;31m  }[0m
+        	            [0;31m })[0m
+        This is how we got here:
+        	TestCloudflareApplyChanges() provider/cloudflare/cloudflare_test.go:1158
+--- FAIL: TestCloudflareApplyChanges (0.00s)
+=== RUN   TestCloudflareDryRunApplyChanges
+--- PASS: TestCloudflareDryRunApplyChanges (0.00s)
+=== RUN   TestCloudflareApplyChangesError
+--- PASS: TestCloudflareApplyChangesError (0.00s)
+=== RUN   TestCloudflareGetRecordID
+--- PASS: TestCloudflareGetRecordID (0.00s)
+=== RUN   TestCloudflareGroupByNameAndType
+--- PASS: TestCloudflareGroupByNameAndType (0.00s)
+=== RUN   TestProviderPropertiesIdempotency
+=== RUN   TestProviderPropertiesIdempotency/ProxyDefault:_false,_ShouldBeProxied:_false,_ExpectUpdates:_false
+=== RUN   TestProviderPropertiesIdempotency/ProxyDefault:_true,_ShouldBeProxied:_true,_ExpectUpdates:_false
+=== RUN   TestProviderPropertiesIdempotency/ProxyDefault:_true,_ShouldBeProxied:_false,_ExpectUpdates:_true
+=== RUN   TestProviderPropertiesIdempotency/ProxyDefault:_false,_ShouldBeProxied:_true,_ExpectUpdates:_true
+--- PASS: TestProviderPropertiesIdempotency (0.00s)
+    --- PASS: TestProviderPropertiesIdempotency/ProxyDefault:_false,_ShouldBeProxied:_false,_ExpectUpdates:_false (0.00s)
+    --- PASS: TestProviderPropertiesIdempotency/ProxyDefault:_true,_ShouldBeProxied:_true,_ExpectUpdates:_false (0.00s)
+    --- PASS: TestProviderPropertiesIdempotency/ProxyDefault:_true,_ShouldBeProxied:_false,_ExpectUpdates:_true (0.00s)
+    --- PASS: TestProviderPropertiesIdempotency/ProxyDefault:_false,_ShouldBeProxied:_true,_ExpectUpdates:_true (0.00s)
+=== RUN   TestCloudflareComplexUpdate
+--- PASS: TestCloudflareComplexUpdate (0.00s)
+=== RUN   TestCustomTTLWithEnabledProxyNotChanged
+--- PASS: TestCustomTTLWithEnabledProxyNotChanged (0.00s)
+=== RUN   TestCloudFlareProvider_Region
+--- PASS: TestCloudFlareProvider_Region (0.00s)
+=== RUN   TestCloudFlareProvider_newCloudFlareChange
+=== RUN   TestCloudFlareProvider_newCloudFlareChange/For_free_Zone_respecting_comment_length,_expect_no_trimming
+=== RUN   TestCloudFlareProvider_newCloudFlareChange/For_free_Zones_not_respecting_comment_length,_expect_trimmed_comments
+=== RUN   TestCloudFlareProvider_newCloudFlareChange/For_paid_Zones_respecting_comment_length,_expect_no_trimming
+=== RUN   TestCloudFlareProvider_newCloudFlareChange/For_paid_Zones_not_respecting_comment_length,_expect_trimmed_comments
+--- PASS: TestCloudFlareProvider_newCloudFlareChange (0.14s)
+    --- PASS: TestCloudFlareProvider_newCloudFlareChange/For_free_Zone_respecting_comment_length,_expect_no_trimming (0.00s)
+    --- PASS: TestCloudFlareProvider_newCloudFlareChange/For_free_Zones_not_respecting_comment_length,_expect_trimmed_comments (0.14s)
+    --- PASS: TestCloudFlareProvider_newCloudFlareChange/For_paid_Zones_respecting_comment_length,_expect_no_trimming (0.00s)
+    --- PASS: TestCloudFlareProvider_newCloudFlareChange/For_paid_Zones_not_respecting_comment_length,_expect_trimmed_comments (0.00s)
+=== RUN   TestCloudFlareProvider_submitChangesCNAME
+--- PASS: TestCloudFlareProvider_submitChangesCNAME (0.00s)
+=== RUN   TestCloudFlareProvider_submitChangesApex
+--- PASS: TestCloudFlareProvider_submitChangesApex (0.00s)
+=== RUN   TestCloudflareZoneRecordsFail
+--- PASS: TestCloudflareZoneRecordsFail (0.00s)
+=== RUN   TestCloudflareLongRecordsErrorLog
+--- PASS: TestCloudflareLongRecordsErrorLog (0.00s)
+=== RUN   TestCloudflareDNSRecordsOperationsFail
+    cloudflare_test.go:2268: should not fail - "failing to create dns record", failed to submit all changes for the following zones: ["001"]
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+    cloudflare_test.go:2251: should not fail, failed to list erroring DNS record
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+    cloudflare_test.go:2268: should not fail - "failing to update DNS record", failed to submit all changes for the following zones: ["001"]
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+    cloudflare_test.go:2268: should not fail - "failing to delete erroring DNS record", failed to submit all changes for the following zones: ["001"]
+    cloudflare_test.go:2280: 
+        	Error Trace:	/workspaces/external-dns/provider/cloudflare/cloudflare_test.go:2280
+        	Error:      	Not equal: 
+        	            	expected: map[string]string(nil)
+        	            	actual  : map[string]string{}
+        	            	
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1,2 +1,3 @@
+        	            	-(map[string]string) <nil>
+        	            	+(map[string]string) {
+        	            	+}
+        	            	 
+        	Test:       	TestCloudflareDNSRecordsOperationsFail
+        	Messages:   	custom hostnames should be the same
+--- FAIL: TestCloudflareDNSRecordsOperationsFail (0.00s)
+=== RUN   TestCloudflareDisabledCustomHostnameOperations
+--- PASS: TestCloudflareDisabledCustomHostnameOperations (0.00s)
+=== RUN   TestCloudflareCustomHostnameNotFoundOnRecordDeletion
+    cloudflare_test.go:2504: corrupting custom hostname "ID-newerror-getCustomHostnameOrigin.foo.fancybar.com"
+--- PASS: TestCloudflareCustomHostnameNotFoundOnRecordDeletion (0.00s)
+=== RUN   TestCloudflareListCustomHostnamesWithPagionation
+--- PASS: TestCloudflareListCustomHostnamesWithPagionation (0.12s)
+=== RUN   TestZoneHasPaidPlan
+--- PASS: TestZoneHasPaidPlan (0.00s)
+FAIL
+FAIL	sigs.k8s.io/external-dns/provider/cloudflare	0.289s
+FAIL
