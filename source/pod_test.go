@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -663,7 +664,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false, "", nil)
+			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false, "", nil, time.Second)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -891,7 +892,7 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false, "", nil)
+			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false, "", nil, time.Second)
 			require.NoError(t, err)
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
@@ -1047,7 +1048,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "", false, "", nil)
+		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "", false, "", nil, time.Second)
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1128,7 +1129,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "template", false, "", nil)
+		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "template", false, "", nil, time.Second)
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)

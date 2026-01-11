@@ -108,6 +108,7 @@ func NewServiceSource(
 	labelSelector labels.Selector,
 	resolveLoadBalancerHostname,
 	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
+	timeout time.Duration,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -209,7 +210,7 @@ func NewServiceSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

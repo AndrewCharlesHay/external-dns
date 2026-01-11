@@ -80,8 +80,8 @@ func NewIngressSource(
 	kubeClient kubernetes.Interface,
 	namespace, annotationFilter, fqdnTemplate string,
 	combineFqdnAnnotation, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec bool,
-	labelSelector labels.Selector,
-	ingressClassNames []string) (Source, error) {
+	labelFilter labels.Selector, ingressClassNames []string, timeout time.Duration,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func NewIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 
@@ -128,7 +128,7 @@ func NewIngressSource(
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
-		labelSelector:            labelSelector,
+		labelSelector:            labelFilter,
 	}
 	return sc, nil
 }

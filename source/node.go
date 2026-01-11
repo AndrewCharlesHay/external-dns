@@ -62,9 +62,8 @@ func NewNodeSource(
 	kubeClient kubernetes.Interface,
 	annotationFilter, fqdnTemplate string,
 	labelSelector labels.Selector,
-	exposeInternalIPv6,
-	excludeUnschedulable bool,
-	combineFQDNAnnotation bool) (Source, error) {
+	exposeInternalIPV6, excludeUnschedulable, combineFQDNAndAnnotation bool, timeout time.Duration,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -81,7 +80,7 @@ func NewNodeSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 
@@ -89,11 +88,11 @@ func NewNodeSource(
 		client:                kubeClient,
 		annotationFilter:      annotationFilter,
 		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFQDNAnnotation,
+		combineFQDNAnnotation: combineFQDNAndAnnotation,
 		nodeInformer:          nodeInformer,
 		labelSelector:         labelSelector,
 		excludeUnschedulable:  excludeUnschedulable,
-		exposeInternalIPv6:    exposeInternalIPv6,
+		exposeInternalIPv6:    exposeInternalIPV6,
 	}, nil
 }
 

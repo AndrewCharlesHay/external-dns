@@ -19,6 +19,7 @@ import (
 	"net"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -221,7 +222,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				tt.namespace, "",
 				false, "",
 				"{{ .Name }}.tld.org", false,
-				tt.annotationFilter, selector)
+				tt.annotationFilter, selector, time.Second)
 			require.NoError(t, err)
 
 			endpoints, err := pSource.Endpoints(t.Context())

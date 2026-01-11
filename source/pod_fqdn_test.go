@@ -18,6 +18,7 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,7 +61,8 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 				tt.fqdnTemplate,
 				false,
 				"",
-				nil)
+				nil,
+				time.Second)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -409,7 +411,8 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
-				nil)
+				nil,
+				time.Second)
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
@@ -473,7 +476,8 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 				tt.fqdnTemplate,
 				tt.combineFQDN,
 				"",
-				nil)
+				nil,
+				time.Second)
 			require.NoError(t, err)
 
 			_, err = src.Endpoints(t.Context())

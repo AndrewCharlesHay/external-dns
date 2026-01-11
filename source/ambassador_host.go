@@ -81,9 +81,8 @@ func NewAmbassadorHostSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
-	labelSelector labels.Selector,
+	namespace, annotationFilter string,
+	labelSelector labels.Selector, timeout time.Duration,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
@@ -101,7 +100,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

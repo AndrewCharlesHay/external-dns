@@ -72,8 +72,7 @@ func NewOcpRouteSource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
-	labelSelector labels.Selector,
-	ocpRouterName string,
+	labelFilter labels.Selector, routerName string, timeout time.Duration,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -96,7 +95,7 @@ func NewOcpRouteSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 
@@ -108,8 +107,8 @@ func NewOcpRouteSource(
 		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		routeInformer:            informer,
-		labelSelector:            labelSelector,
-		ocpRouterName:            ocpRouterName,
+		labelSelector:            labelFilter,
+		ocpRouterName:            routerName,
 	}, nil
 }
 

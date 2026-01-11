@@ -70,7 +70,8 @@ func NewPodSource(
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
 	annotationFilter string,
-	labelSelector labels.Selector,
+	labelFilter labels.Selector,
+	timeout time.Duration,
 ) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
@@ -78,7 +79,7 @@ func NewPodSource(
 
 	err := podInformer.Informer().AddIndexers(informers.IndexerWithOptions[*corev1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
-		informers.IndexSelectorWithLabelSelector(labelSelector),
+		informers.IndexSelectorWithLabelSelector(labelFilter),
 	))
 
 	if err != nil {
@@ -125,7 +126,7 @@ func NewPodSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 

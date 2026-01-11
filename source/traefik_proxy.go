@@ -107,8 +107,7 @@ func NewTraefikSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace, annotationFilter string,
-	ignoreHostnameAnnotation, enableLegacy, disableNew bool,
+	namespace, annotationFilter string, ignoreHostnameAnnotation bool, enableLegacy bool, disableNew bool, timeout time.Duration,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
@@ -161,7 +160,7 @@ func NewTraefikSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, time.Minute*2); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory, timeout); err != nil {
 		return nil, err
 	}
 
