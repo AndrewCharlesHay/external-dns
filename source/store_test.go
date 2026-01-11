@@ -165,7 +165,8 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 		types.KongTCPIngress, types.F5VirtualServer, types.F5TransportServer, types.TraefikProxy, types.Fake,
 	}
 	sources, err := ByNames(context.TODO(), &Config{
-		sources: ss,
+		sources:        ss,
+		RequestTimeout: time.Second,
 	}, mockClientGenerator)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 9, "should generate all nine sources")
@@ -176,7 +177,8 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewClientset(), nil)
 
 	sources, err := ByNames(context.TODO(), &Config{
-		sources: []string{types.Fake},
+		sources:        []string{types.Fake},
+		RequestTimeout: time.Second,
 	}, mockClientGenerator)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate fake source")
@@ -205,7 +207,8 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 
 	for _, source := range sourceUnderTest {
 		_, err := ByNames(context.TODO(), &Config{
-			sources: []string{source},
+			sources:        []string{source},
+			RequestTimeout: time.Second,
 		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if kubernetes client cannot be created")
 	}
@@ -221,7 +224,8 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 
 	for _, source := range sourcesDependentOnIstioClient {
 		_, err := ByNames(context.TODO(), &Config{
-			sources: []string{source},
+			sources:        []string{source},
+			RequestTimeout: time.Second,
 		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if istio client cannot be created")
 	}
@@ -240,7 +244,8 @@ func (suite *ByNamesTestSuite) TestDynamicKubernetesClientFails() {
 
 	for _, source := range sourcesDependentOnDynamicKubernetesClient {
 		_, err := ByNames(context.TODO(), &Config{
-			sources: []string{source},
+			sources:        []string{source},
+			RequestTimeout: time.Second,
 		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if dynamic kubernetes client cannot be created")
 	}
