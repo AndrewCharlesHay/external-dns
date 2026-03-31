@@ -88,6 +88,7 @@ type Config struct {
 	KubeAPIRequestTimeout          time.Duration
 	KubeAPIQPS                     int
 	KubeAPIBurst                   int
+	KubeAPICacheSyncTimeout        time.Duration
 	DefaultTargets                 []string
 	ForceDefaultTargets            bool
 	OCPRouterName                  string
@@ -163,6 +164,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		KubeAPIRequestTimeout:          cfg.KubeAPIRequestTimeout,
 		KubeAPIQPS:                     cfg.KubeAPIQPS,
 		KubeAPIBurst:                   cfg.KubeAPIBurst,
+		KubeAPICacheSyncTimeout:        cfg.KubeAPICacheSyncTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
 		ForceDefaultTargets:            cfg.ForceDefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,

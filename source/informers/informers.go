@@ -25,14 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const (
-	// defaultTimeout is the maximum time in seconds to wait for informer caches
-	// to complete initial sync. This is intentionally longer than the per-request
-	// timeout: a cache sync may require multiple sequential API calls
-	// (LIST + Watch handshake), so the total wait needs to exceed a single request duration.
-	defaultTimeout = 60
-)
-
 type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 }
@@ -41,27 +33,33 @@ type dynamicInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
 
-func WaitForCacheSync(ctx context.Context, factory informerFactory) error {
-	return waitForCacheSync(ctx, factory.WaitForCacheSync)
+// WaitForCacheSync waits for all informers in the factory to sync their caches.
+// If timeout is 0, waits indefinitely (or until the context is canceled).
+// Returns an error if any informer fails to sync.
+func WaitForCacheSync(ctx context.Context, factory informerFactory, timeout time.Duration) error {
+	return waitForCacheSync(ctx, factory.WaitForCacheSync, timeout)
 }
 
-func WaitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
-	return waitForCacheSync(ctx, factory.WaitForCacheSync)
+// WaitForDynamicCacheSync waits for all dynamic informers in the factory to sync their caches.
+// If timeout is 0, waits indefinitely (or until the context is canceled).
+// Returns an error if any informer fails to sync.
+func WaitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory, timeout time.Duration) error {
+	return waitForCacheSync(ctx, factory.WaitForCacheSync, timeout)
 }
 
-// waitForCacheSync waits for informer caches to sync with a default timeout.
-// Returns an error if any cache fails to sync, wrapping the context error if a timeout occurred.
-func waitForCacheSync[K comparable](ctx context.Context, waitFunc func(<-chan struct{}) map[K]bool) error {
-	// The function receives a ctx but then creates a new timeout,
-	// effectively overriding whatever deadline the caller may have set.
-	// If the caller passed a context with a 30s timeout, this function ignores it and waits 60s anyway.
-	timeout := defaultTimeout * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+// waitForCacheSync waits for informer caches to sync within the given timeout.
+// If timeout is 0, waits indefinitely (bounded only by ctx cancellation).
+// Returns an error if any cache fails to sync.
+func waitForCacheSync[K comparable](ctx context.Context, waitFunc func(<-chan struct{}) map[K]bool, timeout time.Duration) error {
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 	for typ, done := range waitFunc(ctx.Done()) {
 		if !done {
 			if ctx.Err() != nil {
-				return fmt.Errorf("failed to sync %v after %s: %w", typ, timeout, ctx.Err())
+				return fmt.Errorf("failed to sync %v: %w", typ, ctx.Err())
 			}
 			return fmt.Errorf("failed to sync %v", typ)
 		}

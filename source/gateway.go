@@ -214,18 +214,18 @@ func newGatewayRouteSource(
 	if rtInformerFactory != gwInformerFactory {
 		rtInformerFactory.Start(ctx.Done())
 	}
-	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, gwInformerFactory, config.KubeAPICacheSyncTimeout); err != nil {
 		return nil, err
 	}
 	if lsInformer != nil && lsInformerFactory != gwInformerFactory {
-		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
+		if err := informers.WaitForCacheSync(ctx, lsInformerFactory, config.KubeAPICacheSyncTimeout); err != nil {
 			return nil, err
 		}
 	}
-	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, rtInformerFactory, config.KubeAPICacheSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory, config.KubeAPICacheSyncTimeout); err != nil {
 		return nil, err
 	}
 

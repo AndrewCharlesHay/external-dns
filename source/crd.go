@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -78,7 +79,7 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 		return nil, err
 	}
 
-	return newCrdSource(ctx, c, crWriter, cfg.Namespace, cfg.LabelFilter)
+	return newCrdSource(ctx, c, crWriter, cfg.Namespace, cfg.LabelFilter, cfg.KubeAPICacheSyncTimeout)
 }
 
 func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
@@ -173,7 +174,8 @@ func newCrdSource(
 	c crcache.Cache,
 	crWriter client.Client,
 	namespace string,
-	labelSelector labels.Selector) (*crdSource, error) {
+	labelSelector labels.Selector,
+	cacheSyncTimeout time.Duration) (*crdSource, error) {
 	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
 	if err != nil {
 		return nil, err
@@ -193,7 +195,7 @@ func newCrdSource(
 		listOpts: listOpts,
 	}
 
-	if err := startAndSync(ctx, c); err != nil {
+	if err := startAndSync(ctx, c, cacheSyncTimeout); err != nil {
 		return nil, err
 	}
 
@@ -201,19 +203,29 @@ func newCrdSource(
 }
 
 // startAndSync starts the cache in a goroutine and waits for it to sync.
+// If timeout is > 0, the wait is bounded by that duration; otherwise it is
+// bounded only by ctx cancellation.
 // Returns an error if the cache fails to start or sync.
-func startAndSync(ctx context.Context, c crcache.Cache) error {
+func startAndSync(ctx context.Context, c crcache.Cache, timeout time.Duration) error {
 	errCh := make(chan error, 1)
 	go func() { errCh <- c.Start(ctx) }()
-	if !c.WaitForCacheSync(ctx) {
+
+	syncCtx := ctx
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		syncCtx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+
+	if !c.WaitForCacheSync(syncCtx) {
 		select {
 		case err := <-errCh:
 			if err != nil {
 				return fmt.Errorf("cache failed to sync: %w", err)
 			}
 			return fmt.Errorf("cache failed to sync")
-		case <-ctx.Done():
-			return fmt.Errorf("cache failed to sync: %w", ctx.Err())
+		case <-syncCtx.Done():
+			return fmt.Errorf("cache failed to sync: %w", syncCtx.Err())
 		}
 	}
 	return nil

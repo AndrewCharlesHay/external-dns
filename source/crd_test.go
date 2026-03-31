@@ -485,7 +485,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{
 				ti.namespaceFilter, ti.labelSelector, ti.annotationSelector}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector, 0)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
@@ -563,7 +563,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			}
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, 0)
 			require.NoError(t, err)
 
 			_, err = cs.Endpoints(t.Context())
@@ -613,7 +613,7 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 		},
 	})
 
-	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil, 0)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -708,7 +708,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	}
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(crds.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, 0)
 	require.NoError(t, err)
 
 	res, err := cs.Endpoints(t.Context())
@@ -728,7 +728,7 @@ func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
 	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(elements.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, 0)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -756,7 +756,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	}, 2*time.Second, 10*time.Millisecond)
 
 	fakeCache := newFakeCRDCache(t, informer, fakeCRDCacheFilter{})
-	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil, 0)
 	require.NoError(t, err)
 
 	return watcher, cs
@@ -839,7 +839,7 @@ func TestStartAndSync(t *testing.T) {
 				cancel()
 			}
 			c := &startSyncFakeCache{startErr: tc.startErr, syncOK: tc.syncOK, blockStart: tc.blockStart}
-			err := startAndSync(ctx, c)
+			err := startAndSync(ctx, c, 0)
 			if tc.wantErr == "" {
 				require.NoError(t, err)
 			} else {

@@ -55,13 +55,13 @@ func TestWaitForCacheSync(t *testing.T) {
 			name:        "some caches not synced",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
 			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
+			errorMsg:    "failed to sync string",
 		},
 		{
 			name:        "context timeout",
 			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
 			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
+			errorMsg:    "failed to sync string",
 		},
 	}
 
@@ -70,7 +70,7 @@ func TestWaitForCacheSync(t *testing.T) {
 			ctx := t.Context()
 
 			factory := &mockInformerFactory{syncResults: tt.syncResults}
-			err := WaitForCacheSync(ctx, factory)
+			err := WaitForCacheSync(ctx, factory, 0)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -97,13 +97,13 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 			name:        "some caches not synced",
 			syncResults: map[schema.GroupVersionResource]bool{{}: false},
 			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
+			errorMsg:    "failed to sync string",
 		},
 		{
 			name:        "context timeout",
 			syncResults: map[schema.GroupVersionResource]bool{{}: false},
 			expectError: true,
-			errorMsg:    "failed to sync string with timeout 1m0s",
+			errorMsg:    "failed to sync string",
 		},
 	}
 
@@ -112,7 +112,7 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 			ctx := t.Context()
 
 			factory := &mockDynamicInformerFactory{syncResults: tt.syncResults}
-			err := WaitForDynamicCacheSync(ctx, factory)
+			err := WaitForDynamicCacheSync(ctx, factory, 0)
 
 			if tt.expectError {
 				assert.Error(t, err)

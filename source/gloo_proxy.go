@@ -186,10 +186,10 @@ func NewGlooSource(
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, cfg.KubeAPICacheSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory, cfg.KubeAPICacheSyncTimeout); err != nil {
 		return nil, err
 	}
 
