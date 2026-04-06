@@ -33,29 +33,35 @@ type dynamicInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
 
+// DefaultCacheSyncTimeout is the default timeout for waiting for informer
+// caches to sync. A timeout is always enforced to prevent indefinite hangs
+// caused by misconfiguration (e.g. missing RBAC or CRD not installed).
+const DefaultCacheSyncTimeout = 60 * time.Second
+
 // WaitForCacheSync waits for all informers in the factory to sync their caches.
-// If timeout is 0, waits indefinitely (or until the context is canceled).
-// Returns an error if any informer fails to sync.
+// If timeout is <= 0, the default timeout (60s) is used.
+// Returns an error if any informer fails to sync within the timeout.
 func WaitForCacheSync(ctx context.Context, factory informerFactory, timeout time.Duration) error {
 	return waitForCacheSync(ctx, factory.WaitForCacheSync, timeout)
 }
 
 // WaitForDynamicCacheSync waits for all dynamic informers in the factory to sync their caches.
-// If timeout is 0, waits indefinitely (or until the context is canceled).
-// Returns an error if any informer fails to sync.
+// If timeout is <= 0, the default timeout (60s) is used.
+// Returns an error if any informer fails to sync within the timeout.
 func WaitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory, timeout time.Duration) error {
 	return waitForCacheSync(ctx, factory.WaitForCacheSync, timeout)
 }
 
 // waitForCacheSync waits for informer caches to sync within the given timeout.
-// If timeout is 0, waits indefinitely (bounded only by ctx cancellation).
+// If timeout is <= 0, the default (60s) is used to prevent indefinite hangs.
 // Returns an error if any cache fails to sync.
 func waitForCacheSync[K comparable](ctx context.Context, waitFunc func(<-chan struct{}) map[K]bool, timeout time.Duration) error {
-	if timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
+	if timeout <= 0 {
+		timeout = DefaultCacheSyncTimeout
 	}
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, timeout)
+	defer cancel()
 	for typ, done := range waitFunc(ctx.Done()) {
 		if !done {
 			if ctx.Err() != nil {

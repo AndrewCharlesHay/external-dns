@@ -748,7 +748,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
 	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
 	b.IntVar("kube-api-burst", "Maximum burst for throttle to the Kubernetes API server from this client.", defaultConfig.KubeAPIBurst, &cfg.KubeAPIBurst)
-	b.DurationVar("kube-api-cache-sync-timeout", "Timeout for waiting for Kubernetes API cache sync during startup. 0s means no timeout.", defaultConfig.KubeAPICacheSyncTimeout, &cfg.KubeAPICacheSyncTimeout)
+	b.DurationVar("kube-api-cache-sync-timeout", "Timeout for waiting for Kubernetes API cache sync during startup. Values <= 0 use the default (60s).", defaultConfig.KubeAPICacheSyncTimeout, &cfg.KubeAPICacheSyncTimeout)
 }
 
 func App(cfg *Config) *kingpin.Application {

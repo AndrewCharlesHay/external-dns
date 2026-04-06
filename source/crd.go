@@ -203,19 +203,17 @@ func newCrdSource(
 }
 
 // startAndSync starts the cache in a goroutine and waits for it to sync.
-// If timeout is > 0, the wait is bounded by that duration; otherwise it is
-// bounded only by ctx cancellation.
+// If timeout is <= 0, the default (60s) is used to prevent indefinite hangs.
 // Returns an error if the cache fails to start or sync.
 func startAndSync(ctx context.Context, c crcache.Cache, timeout time.Duration) error {
 	errCh := make(chan error, 1)
 	go func() { errCh <- c.Start(ctx) }()
 
-	syncCtx := ctx
-	if timeout > 0 {
-		var cancel context.CancelFunc
-		syncCtx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
+	if timeout <= 0 {
+		timeout = informers.DefaultCacheSyncTimeout
 	}
+	syncCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	if !c.WaitForCacheSync(syncCtx) {
 		select {
